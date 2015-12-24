@@ -1,12 +1,14 @@
-#Ubuntu14.10をベースにする
+# `docker run -it [コンテナ名] mitmproxy` でproxyを通るデータを確認するためのコンテナ
+
+#Ubuntu14.04をベースにする
 FROM ubuntu:14.04
 
 MAINTAINER kyanro
 
 # packageのupgrade と、日本語環境、sshd、mitmproxyに必要なpackageをインストール
 RUN apt-get update && apt-get -y upgrade && \
-  apt-get -y install language-pack-ja-base language-pack-ja ibus-mozc \
-    openssh-server \
+  apt-get -y install \
+    language-pack-ja-base language-pack-ja \
     python-pip python-dev libffi-dev libssl-dev \
       libxml2-dev libxslt1-dev libjpeg8-dev zlib1g-dev
 
@@ -21,11 +23,7 @@ ENV LC_CTYPE ja_JP.UTF-8
 # mitmproxy のインストール
 RUN pip install mitmproxy netlib
 
-#ssh の設定. user:root, pass:root でアクセスできるようにする
-RUN mkdir /var/run/sshd
-RUN echo 'root:root' | chpasswd
-RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-
-# sshd の起動とポート設定
-EXPOSE 22
-CMD /usr/sbin/sshd -D
+# port forwarding 設定... はdocker runを特権モードで動かしたあとに下記を実行する必要がある
+# Run sudo sysctl -w net.ipv4.ip_forward=1
+# Run sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+# Run sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j REDIRECT --to-port 8080
